@@ -1,0 +1,184 @@
+# proto-file: proto/spawner.proto
+# message: DefinedUnits
+
+
+#### FUNCTIONS
+
+cartesian_function {
+  # No definitions since sun shouldn't be moving at the moment.
+  id { id: 'heliocentric' }
+
+  x: "600"
+  y: "400"
+}
+
+polar_function {
+  id { id: 'earthly_annual_cycle' }
+
+  r: '200'
+  theta: 't / 365.24 * tau'
+  angle: '2 * pi * t'
+}
+
+polar_function {
+  id { id: 'lunar_cycle' }
+
+  r: '10'
+  # 27 days, 7 hours, and 43 minutes
+  theta: 't / 27.3215 * tau'
+  angle: 't / (27.3215 * tau)'
+}
+
+delta_function {
+  id { id: 'straight_movement' }
+
+  dx: '20 * cos(anglea)'
+  dy: '20 * sin(anglea)'
+}
+
+delta_function {
+  id { id: 'straight_movement_fast' }
+
+  dx: '60 * cos(anglea)'
+  dy: '60 * sin(anglea)'
+}
+
+#### ENTITIES
+
+entity {
+  id { id: 'sun' }
+
+  image: 'resources/images/sun.png'
+
+  movement {
+    state_fn { id { id: 'heliocentric'} }
+    lifetime: 0
+  }
+
+  spawner {
+    id { id: 'create_second_flares'}
+  }
+  spawner {
+    id { id: 'create_earth' }
+  }
+
+  spawner {
+    spawn_entity {
+      image: 'meteor'
+      movement {
+        state_fn {id { id: "straight_movement_fast" }}
+        lifetime: 30
+        loop: false
+      }
+    }
+
+    spawn_count: 20
+
+    follow_center: true
+
+    spawn_time_fn: "2 + idx / 10"
+
+    offset_fn {
+      cartesian {
+        y: "-100 + 10 * idx"
+      }
+    }
+
+    period: 10
+  }
+}
+
+entity {
+  id { id: 'earth'}
+
+  image: 'resources/images/earth.png'
+
+  movement {
+    state_fn { id { id: 'earthly_annual_cycle'}}
+    lifetime: 0
+  }
+
+  spawner {
+    id { id: 'create_moon' }
+  }
+}
+
+entity {
+  id { id: 'moon' }
+
+  image: 'resources/images/moon.png'
+
+  movement {
+    state_fn { id { id: 'lunar_cycle' } }
+    lifetime: 0
+  }
+}
+
+entity {
+  id { id: 'solar_flare' }
+
+  movement {
+    state_fn { id { id: 'straight_movement' } }
+    lifetime: 100
+    loop: false
+  }
+}
+
+#### SPAWNERS
+
+spawner {
+  id { id: 'create_second_flares'}
+
+  spawn_entity { id { id: 'solar_flare' } }
+
+  spawn_count: 180
+
+  spawn_time_fn: '2 * idx'
+
+  period: 360
+
+  offset_fn {
+    polar {
+      r: '20'
+      theta: 'tau * idx / 180'
+      angle: 'tau * idx / 180'
+    }
+    # cartesian {
+    #     x: '20 * cos(tau * idx / 36)'
+    #     y: '20 * sin(tau * idx / 36)'
+    #     angle: 'tau * idx / 36'    
+    # }
+  }
+
+  follow_center: true
+  follow_angle: false
+}
+
+spawner {
+  id { id: 'create_earth' }
+
+  spawn_entity { id { id: 'earth' } }
+
+  spawn_count: 1
+  spawn_time_fn: '0'
+
+  # Do not spawn more than 1 earth
+  period: 0
+
+  follow_center: true
+  follow_angle: false
+}
+
+spawner {
+  id { id: 'create_moon'}
+
+  spawn_entity { id { id: 'moon' } }
+
+  spawn_count: 1
+  spawn_time_fn: '0'
+
+  period: 0
+
+  follow_center: true
+  follow_angle: false
+}

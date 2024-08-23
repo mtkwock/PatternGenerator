@@ -1,0 +1,24 @@
+id { id: "my_first_entity" }
+image: "path/to/image"
+scale: 1.0
+movement {
+  state_fn {
+  	cartesian {
+  		x: "0"
+  		y: "100 * t"
+  		angle: "PI * t"
+  	}
+  }
+  lifetime: 5.0
+  state_fn {
+    cartesian {
+      x: "100 * t"
+      y: "0"
+      angle: "-1 * PI * t"
+    }
+  }
+  lifetime: 5.0
+}
+
+hit_radius: 50
+alignment: 0

@@ -1,0 +1,180 @@
+syntax = "proto2";
+
+package spawner;
+
+// A way to identify premade StateFns instead of doing them inline.
+message StateFnId {
+	optional string id = 1;
+}
+
+// Cartesian Movement relative to the parent and starting position.
+// e.g. 
+//  parent is at postion  ( 1,  2)
+//  starting position is  ( 4,  8)
+//  evaluated to position (16, 32)
+//  Final position is at  (21, 42)
+// Accessible variables include:
+// t: Time since spawn
+// pi: constant 3.14159...
+// j: imaginary
+// idx: Index of this bullet relative to the spawner (default 0)
+// Accessible StateFns incldue:
+// sin: Sinusoid StateFn (Radians)
+// cos: ...
+// exp: Exponential StateFn (base of e)
+// log: Natural logarithm
+// rand: Uniform random decimal between 0 and 1
+message CartesianStateFn {
+	optional StateFnId id = 1;
+
+	optional string x = 2;
+	optional string y = 3;
+	// How the images rotation should be changed.
+	// If this is empty, angle will be set to 0 (no rotation)
+	optional string angle = 4;
+}
+
+// Radial Movement relative to the starting position and parent.
+// This is to make radial movements more convenient to create.
+// t: Time since spawn
+// 
+message PolarStateFn {
+	optional StateFnId id = 1;
+
+	// Angle about the starting position
+	optional string theta = 2;
+	// Distance from the starting position
+	optional string r = 3;
+	// Image's rotational angle
+	optional string angle = 4;
+}
+
+// Movement based on the current state of the world
+// t: Time since spawn
+// dt: Time since last update
+// x: Entity's x position
+// y: Entity's y position
+// o: Entity's Theta Angle (Radians) 
+// tx: Target's x position
+// ty: Target's y position
+message DeltaStateFn {
+	optional StateFnId id = 1;
+
+	optional string dx = 2;
+	optional string dy = 3;
+	// Change in rotational angle. w = omega
+	optional string w = 4;
+}
+
+// Wrapper to determine handle StateFns consistently and separately.
+message StateFn {
+	oneof state_fn {
+		StateFnId id = 1;
+		CartesianStateFn cartesian = 2;
+		PolarStateFn polar = 3;
+		DeltaStateFn delta = 4;
+	}
+}
+
+message Movement {
+	// The series of movements that t
+	repeated StateFn state_fn = 1;
+
+  // How long (in seconds) we should follow this movement.
+  // Any time before is effectively t=0
+  // Any time after is effectively t=lifetime
+  // If negative, go indefinitely
+	repeated float lifetime = 2;
+
+  // Whether to repeat this movement after the last
+  // state_fn is finished.
+	optional bool loop = 3;
+}
+
+message EntityId {
+	optional string id = 1;
+}
+
+message Entity {
+	//// Cosmetic information for this entity.
+	// A way for Patterns to recognize this entity and use it.
+	optional EntityId id = 1;
+
+ 	// Image identifier to use for this entity.
+	optional string image = 2;
+	// How big to scale the image to as a fraction of the original (e.g. 2.0 is 2x)
+	// TODO: Possibly make this into a StateFn
+	optional float scale = 3;
+
+	//// Mathematical values for this entity.
+	// How the Entity will change position and rotation over time.
+	optional Movement movement = 4;
+
+	//// Useful values for the general StateFning of entities.
+	// Radius (in pixels) of the hitbox.  Used for basic collision detection.
+	optional float hit_radius = 5;
+
+    // If this entity has alliance alignment.
+    // ie. which group for hit detection.
+	optional int64 alignment = 6;
+
+	// FOR NOTES ONLY
+	// Values stored:
+	// float time (s) when this was created
+	// Optional[Entity] parent parent entity if any, otherwise absolute value using the entire canvas
+	// movement_idx: Which movement to use.  Starts at 0 and increases whenever movement is increased.
+	// idx: Spawn index value.
+	// x0: Initial x position which movement modifies
+	// y0: Above for y position
+	// a0: Above for angle.
+	// 
+	// if current_time > movement[i].lifetime + start_time:
+	//   Increment x0, y0, and a0 by movement[i](current_time - start_time)
+	//   start_time to movement[i].lifetime + start_time
+	//   i increases by 1
+
+	// Spawning mechanisms of this Entity.
+	repeated Spawner spawner = 7;
+}
+
+message SpawnerId {
+	optional string id = 1;
+}
+
+message Spawner {
+  // If defined in the initial setup, this will be used to create StateFns/templates
+  // When used inline, it will call the template. Any values defined will override the initial values.
+  optional SpawnerId id = 1;
+
+  // The entity to be spawned. Use EntityId for predefined ones
+  // Can use entity to define it inline.
+  optional Entity spawn_entity = 2;
+
+  // Number of spawns to make.
+  optional int64 spawn_count = 3;
+
+  // When to create each spawn. Notably, this doesn't need to be an incrementing StateFn.
+  // Available constants will be [idx]
+  optional string spawn_time_fn = 4;
+
+  // After what period of time this spawner should repeat.
+  // if negative, 0, or unset, do not repeat.
+  optional float period = 5;
+
+  // Calculate the starting point and rotation. Available values with be [idx]
+  optional StateFn offset_fn = 6;
+
+  // Whether or not the spawned entity should be completely relative to the parent.
+  optional bool follow_center = 7;
+  optional bool follow_angle = 8;
+}
+
+message DefinedUnits {
+	repeated Entity entity = 1;
+
+	repeated Spawner spawner = 2;
+
+	repeated CartesianStateFn cartesian_function = 3;
+	repeated PolarStateFn polar_function = 4;
+	repeated DeltaStateFn delta_function = 5;
+}

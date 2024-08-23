@@ -1,0 +1,20 @@
+###############################################################################
+# Bazel now uses Bzlmod by default to manage external dependencies.
+# Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
+#
+# For more details, please check https://github.com/bazelbuild/bazel/issues/18958
+###############################################################################
+
+# https://registry.bazel.build/modules/protobuf
+bazel_dep(name = "protobuf", version = "27.3")
+bazel_dep(name = "rules_python", version = "0.34.0")
+
+# Used to install 3rd party packages from pip
+# https://rules-python.readthedocs.io/en/latest/pypi-dependencies.html#installing-third-party-packages
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "my_deps",
+    python_version = "3.11",
+    requirements_lock = "//src:requirements.txt",
+)
+use_repo(pip, "my_deps")
